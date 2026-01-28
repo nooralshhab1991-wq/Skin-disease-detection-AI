@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>مستشفى الشفاء الرقمي</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+  <header class="hero">
+    <div class="hero__top">
+      <div class="brand">
+        <div class="brand__mark">✚</div>
+        <div>
+          <div class="brand__name">مستشفى الشفاء الرقمي</div>
+          <div class="brand__sub">عيادة الجلدية الذكية • فحص مبدئي بالذكاء الاصطناعي</div>
+        </div>
+      </div>
+      <div class="pill">تنبيه: AI للتثقيف وليس تشخيصاً طبياً</div>
+    </div>
+
+    <h1 class="hero__title">ارفع/ارفعي صورة جلد للحصول على التوقع الأقرب</h1>
+    <p class="hero__desc">
+      بعد التوقع، سيظهر شرح تثقيفي عن الحالة المقترحة ونصائح عامة آمنة قبل زيارة الطبيب.
+    </p>
+  </header>
+
+  <main class="grid">
+    <!-- ===== رفع الصورة ===== -->
+    <section class="card">
+      <h2 class="card__title">رفع صورة</h2>
+
+      <form method="POST" enctype="multipart/form-data">
+        <label class="file">
+          <input type="file" id="fileInput" name="image"
+                 accept=".jpg,.jpeg,.png,.webp" required>
+          <span class="file__btn">اختاري صورة</span>
+          <span id="fileName" class="file__name">لم يتم اختيار ملف</span>
+        </label>
+
+        <label class="notes">
+          <span class="notes__label">ملاحظات اختيارية (أعراض/مدة/حكة..)</span>
+          <textarea name="notes" placeholder="مثال: حكة خفيفة منذ أسبوع، احمرار..." rows="3"></textarea>
+        </label>
+
+        <button type="submit">تنبؤ</button>
+
+        <p class="hint">الصيغ المدعومة: JPG, PNG, JPEG, WEBP</p>
+      </form>
+
+      <div class="preview">
+        <h3 class="preview__title">معاينة</h3>
+        {% if image_url %}
+          <img class="preview__img" src="{{ image_url }}" alt="Preview">
+        {% else %}
+          <div class="preview__empty">اختاري صورة لتظهر المعاينة هنا.</div>
+        {% endif %}
+      </div>
+    </section>
+
+    <!-- ===== النتائج ===== -->
+    <section class="card">
+      <h2 class="card__title">النتيجة</h2>
+
+      {% if error %}
+        <div class="alert">{{ error }}</div>
+      {% endif %}
+
+      {% if result %}
+        <div class="single-result">
+          <div class="result-name">
+            {{ result.label }}
+          </div>
+        </div>
+
+        <p class="disclaimer">
+          * هذا ناتج ذكاء اصطناعي للتثقيف فقط وليس تشخيصاً طبياً.
+        </p>
+
+        {% if ai_text %}
+          <div class="ai">
+            <div class="ai__title">شرح تثقيفي (AI)</div>
+            <div class="ai__text">
+              {{ ai_text | replace('\n','<br>') | safe }}
+            </div>
+          </div>
+        {% endif %}
+
+      {% else %}
+        <p class="muted">ارفعي صورة واضغطي “تنبؤ” لتظهر النتيجة هنا.</p>
+      {% endif %}
+    </section>
+
+    <!-- ===== الشات ===== -->
+    <section class="card">
+      <h2 class="card__title">اسألي الذكاء الاصطناعي</h2>
+
+      <textarea id="chatInput" rows="3"
+        placeholder="اسألي عن الحالة، الأعراض، أو النصائح العامة..."></textarea>
+
+      <button type="button" onclick="sendChat()">إرسال</button>
+
+      <div id="chatReply" class="ai__text" style="margin-top:10px;"></div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    مبني باستخدام Flask + TensorFlow • مشروع جامعي للتعلّم
+  </footer>
+
+  <script>
+    const fileInput = document.getElementById("fileInput");
+    const fileName = document.getElementById("fileName");
+
+    fileInput.addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        fileName.textContent = "تم اختيار: " + file.name;
+      }
+    });
+
+    async function sendChat(){
+      const msg = document.getElementById("chatInput").value.trim();
+      if(!msg) return;
+
+      const res = await fetch("/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: msg })
+      });
+
+      const data = await res.json();
+      document.getElementById("chatReply").innerText = data.reply;
+    }
+  </script>
+
+</body>
+</html>
